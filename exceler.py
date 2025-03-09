@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 import base64
+import pandas as pd
+import io
 from mistralai import Mistral
 
 st.set_page_config(layout="wide", page_title="Mistral OCR App", page_icon="🖥️")
@@ -132,7 +134,18 @@ if st.session_state["ocr_result"]:
     with col2:
         st.subheader("OCR Result")
         st.write(st.session_state["ocr_result"])
-        # Create a custom download link for OCR result
-        b64 = base64.b64encode(st.session_state["ocr_result"].encode()).decode()
-        href = f'<a href="data:file/txt;base64,{b64}" download="ocr_result.txt">Download OCR Result</a>'
+        
+        # Convert the OCR result into a DataFrame
+        result_df = pd.DataFrame({"OCR Result": [st.session_state["ocr_result"]]})
+
+        # Create an Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            result_df.to_excel(writer, index=False, sheet_name='OCR Result')
+            writer.save()
+            processed_data = output.getvalue()
+
+        # Create a download link for the Excel file
+        b64 = base64.b64encode(processed_data).decode()
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="ocr_result.xlsx">Download OCR Result (Excel)</a>'
         st.markdown(href, unsafe_allow_html=True)
